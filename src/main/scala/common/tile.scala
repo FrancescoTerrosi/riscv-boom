@@ -49,7 +49,7 @@ case class BoomTileParams(
   icache: Option[ICacheParams] = Some(ICacheParams()),
   dcache: Option[DCacheParams] = Some(DCacheParams()),
   btb: Option[BTBParams] = Some(BTBParams()),
-  trace: Boolean = false,
+  trace: Boolean = true,
   name: Option[String] = Some("boom_tile"),
   hartId: Int = 0
 ) extends InstantiableTileParams[BoomTile]
@@ -159,6 +159,11 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
   val core = Module(new BoomCore(outer.boomParams.trace)(outer.p))
   val lsu  = Module(new LSU()(outer.p, outer.dcache.module.edge))
 
+
+
+  val monitorino = Module(new Monitorino()(outer.p))
+
+
   val ptwPorts         = ListBuffer(lsu.io.ptw, outer.frontend.module.io.ptw, core.io.ptw_tlb)
 
   val hellaCachePorts  = ListBuffer[HellaCacheIO]()
@@ -176,6 +181,13 @@ class BoomTileModuleImp(outer: BoomTile) extends BaseTileModuleImp(outer){
   // Connect the core pipeline to other intra-tile modules
   outer.frontend.module.io.cpu <> core.io.ifu
   core.io.lsu <> lsu.io.core
+
+
+  // connect monitorino
+  //monitorino.io.coreMonitorBundle <> core.coreMonitorBundle
+
+  monitorino.io.interrupts <> core.io.interrupts
+  monitorino.io.trace <> core.io.trace
 
   //fpuOpt foreach { fpu => core.io.fpu <> fpu.io } RocketFpu - not needed in boom
   core.io.rocc := DontCare
